@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP Datalogging Firebase App THCS PTIT </title>
+
+    <!-- include Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
+
+    <!-- include only the Firebase features as you need -->
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
+
+    <script>
+      // Điền firebase config tương ứng lúc tạo app web
+      const firebaseConfig = {
+        apiKey: "AIzaSyDB9PsJCyzlacEKDUaRVJlyUwmxpmIbiDc",
+        authDomain: "btl-thcs-esp32-ptit.firebaseapp.com",
+        databaseURL: "https://btl-thcs-esp32-ptit-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "btl-thcs-esp32-ptit",
+        storageBucket: "btl-thcs-esp32-ptit.appspot.com",
+        messagingSenderId: "603632117251",
+        appId: "1:603632117251:web:b083db586a9c4505045036"
+      };
+
+      // Cài đặt firebase
+      firebase.initializeApp(firebaseConfig);
+
+      // Make auth and database references
+      const auth = firebase.auth();
+      const db = firebase.database();
+
+    </script>
+
+    <!-- include highchartsjs to build the charts-->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <!-- include to use jquery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!--include icons from fontawesome-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <!-- include Gauges Javascript library-->
+    <script src="https://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/all/gauge.min.js"></script>
+    <!--reference for favicon-->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!--reference a stylesheet-->
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> 
+   
+  </head>
+
+  <body>
+
+    <!--THANH TREN CUNG-->
+    <div class="topnav">
+      <h1> BTL THCS - APP HIỂN THỊ DỮ LIỆU FIREBASE <i class="fas fa-cloud"></i></h1>
+    </div>
+
+    <!--THANH THONG TIN DANG NHAP (USER DETAILS/LOGOUT BUTTON)-->
+    <div id="authentication-bar" style="display: none;">
+      <p><span id="authentication-status"> <i class="fas fa-user"></i> Người dùng đã đăng nhập: </span>
+        <span id="user-details">USEREMAIL</span>
+        <button id="logout-link"> Đăng xuất </button>
+      </p>
+    </div>
+
+    <!--FORM DANG NHAP-->
+    <form id="login-form" style="display: none;">
+      <div class="form-elements-container">
+        <label for="input-email"><b> Email <i class="fas fa-user"></i></b></label>
+        <input type="text" placeholder="Nhập Email" id="input-email" required>
+
+        <label for="input-password"><b> Mật Khẩu <i class="fas fa-key"></i></b></label>
+        <input type="password" placeholder="Nhập Mật Khẩu" id="input-password" required>
+
+        <button type="submit" id="login-button"> Đăng nhập </button>
+        <p id="error-message" style="color:red;"></p>
+      </div>   
+      <a href='https://postimages.org/' target='_blank'><img src='https://i.postimg.cc/RhPbZfKp/Group4.png' border='0' alt='Group4'/></a>
+    </form>
+
+    <!--CONTENT (SENSOR READINGS)-->
+    <div class="content-sign-in" id="content-sign-in" style="display: none;">
+
+      <!--LAST UPDATE-->
+      <p><span class ="date-time"><i class="fas fa-clock-o"></i> Cập nhật lần cuối: <span id="lastUpdate"></span></span></p>
+      <p>
+        <i class="fas fa-angle-double-down"> </i> Thông số: <input type="checkbox" id="cards-checkbox" name="cards-checkbox" checked>
+        **
+        <i class="fas fa-gauge"></i> Đồng hồ đo: <input type="checkbox" id="gauges-checkbox" name="gauges-checkbox" checked>
+        **
+        <i class="fas fa-area-chart"></i> Đồ thị: <input type="checkbox" id="charts-checkbox" name="charts-checkbox" unchecked>
+      </p>
+      <div id="cards-div">
+        <div class="cards">
+          <!--NHIETDO-->
+          <div class="card">
+            <p><i class="fas fa-thermometer-half" style="color:#0ab46d;"></i> NHIỆT ĐỘ </p>
+            <p><span class="reading"><span id="temp"></span> &deg;C</span></p>
+          </div>
+          <!--DOAM-->
+          <div class="card">
+            <p><i class="fas fa-tint" style="color:#bbc646;"></i> ĐỘ ẨM </p>
+            <p><span class="reading"><span id="hum"></span> &percnt;</span></p>
+          </div>
+          <!--ANHSANG-->
+          <div class="card">
+            <p><i class="fas fa-lightbulb-o" style="color:#d6660a;"></i> ÁNH SÁNG </p>
+            <p><span class="reading"><span id="light"></span> cd </span></p>
+          </div>
+          <!--AMTHANH-->
+          <div class="card">
+            <p><i class="fas fa-microphone" style="color:#c300ff;"></i> ÂM THANH </p>
+            <p><span class="reading"><span id="sound"></span> dB </span></p>
+          </div>
+        </div>
+      </div>
+      <!--GAUGES-->
+      <div id ="gauges-div">
+        <div class="cards">
+          <!--NHIETDO-->
+          <div class="card">
+            <canvas id="gauge-temperature"></canvas>
+          </div>
+          <!--DOAM-->
+          <div class="card">
+            <canvas id="gauge-humidity"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!--CHARTS-->
+      <div id="charts-div" style="display:none">
+        <!--SET NUMBER OF READINGS INPUT FIELD-->
+        <div>
+          <p><i class="fas fa-clipboard-list"></i> Số dữ liệu hiển thị: <input type="number" id="charts-range"></p>
+        </div>
+        <!--NHIETDO-CHART-->
+        <div class="cards">
+          <div class="card">
+            <p><i class="fas fa-thermometer-half" style="color:#059e8a;"></i> BIỂU ĐỒ NHIỆT ĐỘ </p>
+            <div id="chart-temperature" class="chart-container"></div>
+          </div>
+        </div>
+        <!--DOAM-CHART-->
+        <div class="cards">
+          <div class="card">
+            <p><i class="fas fa-tint" style="color:#00add6;"></i> BIỂU ĐỒ ĐỘ ẨM </p>
+            <div id="chart-humidity" class="chart-container"></div>
+          </div>
+        </div>
+        <!--ANHSANG-CHART-->
+        <div class="cards">
+          <div class="card">
+            <p><i class="fas fa-lightbulb-o" style="color:#d6660a;"></i> BIỂU ĐỒ ÁNH SÁNG </p>
+            <div id="chart-light" class="chart-container"></div>
+          </div>
+        </div>
+        <!--AMTHANH-CHART-->
+        <div class="cards">
+          <div class="card">
+            <p><i class="fas fa-microphone" style="color:#a01c8a;"></i> BIỂU ĐỒ ÂM THANH </p>
+            <div id="chart-sound" class="chart-container"></div>
+          </div>
+        </div>
+      </div>
+
+    <!--BUTTONS TO HANDLE DATA-->
+    <p>
+      <!--View data button-->
+      <button id="view-data-button"> Hiển thị bảng dữ liệu </button>
+      <!--Hide data button-->
+      <button id="hide-data-button" style= "display:none;"> Ẩn bảng dữ liệu </button>
+      <!--Delete data button-->
+      <button id="delete-button" class="deletebtn"> Xóa dữ liệu </button>
+    </p>
+    <!--Modal to delete data-->
+    <div id="delete-modal" class="modal" sytle="display:none">
+      <span onclick = "document.getElementById('delete-modal').style.display='none'" class="close" title="Close Modal">×</span>
+      <form id= "delete-data-form" class="modal-content" action="/">
+        <div class="container">
+          <h1> Xóa dữ liệu </h1>
+          <p> Bạn có chắc muốn xóa hết dữ liệu trên database?</p>
+          <div class="clearfix">
+            <button type="button" onclick="document.getElementById('delete-modal').style.display='none'" class="cancelbtn"> Thoát </button>
+            <button type="submit" onclick="document.getElementById('delete-modal').style.display='none'" class="deletebtn"> Xóa </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!--TABLE WITH ALL DATA-->
+    <div class ="cards">
+      <div class="card" id="table-container" style= "display:none;">
+        <table id="readings-table">
+            <tr id="theader">
+              <th> Thời gian </th>
+              <th> Nhiệt độ (ºC)</th>
+              <th> Độ ẩm (%) </th>
+              <th> Ánh sáng (cd) </th>
+              <th> Âm thanh (dB) </th>
+            </tr>
+            <tbody id="tbody">
+            </tbody>
+        </table>
+        <p><button id="load-data" style= "display:none;"> Hiển thị thêm...</button></p>
+      </div>
+    </div>
+
+  </div>
+
+    <!--INCLUDE JS FILES-->
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/charts-definition.js"></script>
+    <script src="scripts/gauges-definition.js"></script>
+    <script src="scripts/index.js"></script>
+
+  </body>
+
+</html>
